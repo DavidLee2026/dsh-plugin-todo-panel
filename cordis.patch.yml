@@ -1,0 +1,13 @@
+# 本包自带的组合补丁。
+#
+# 装好（dsh plugin add）之后，下面这条会插进 profile 的配置树。
+# 要改数据文件位置或标签，不要改这个文件，改你自己 profile 的 cordis.patch.yml：
+# 同 id 的覆盖会整段替换 config，所以那里只写 id 与要改的字段即可。
+#
+#   - id: dsh-plugin-todo-panel
+#     config:
+#       todoFile: /path/to/你的清单.md
+- insert:
+    - id: dsh-plugin-todo-panel
+      name: 'dsh-plugin-todo-panel'
+      config: {}

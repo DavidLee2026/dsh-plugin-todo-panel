@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Todo Panel",
+    "description": "Shows a markdown todo list in the right sidebar: open count, how long each item has waited, tag filters, and every toggle or delete writes back to the file."
+  }
+}
