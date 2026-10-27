@@ -33,7 +33,7 @@
 dsh plugin --profile web add github:DavidLee2026/dsh-plugin-todo-panel
 ```
 
-然后在 `~/.dsh/profiles/web/cordis.patch.yml` 里给它配上数据文件。同 id 的覆盖会整段替换 `config`，所以这里只写要改的字段：
+然后在 `$DSH_HOME/profiles/web/cordis.patch.yml` 里给它配上数据文件（`$DSH_HOME` 是 DSH 的数据目录，profile 名按你实际用的填）。同 id 的覆盖会整段替换 `config`，所以这里只写要改的字段：
 
 ```yaml
 - id: dsh-plugin-todo-panel
@@ -46,7 +46,7 @@ dsh plugin --profile web add github:DavidLee2026/dsh-plugin-todo-panel
 方式二，手动装（适合要改代码的人）：
 
 ```bash
-ln -sfn "$PWD" ~/.dsh/profiles/web/node_modules/dsh-plugin-todo-panel
+ln -sfn "$PWD" "$DSH_HOME/profiles/web/node_modules/dsh-plugin-todo-panel"
 ```
 
 ```yaml
@@ -110,7 +110,17 @@ ln -sfn "$PWD" ~/.dsh/profiles/web/node_modules/dsh-plugin-todo-panel
 npm test
 ```
 
-7 个用例，全部在临时目录里的副本上跑，不碰真实清单。改完按这张表让它生效：
+7 个用例，全部在临时目录里的副本上跑，不碰真实清单。
+
+推送到公开仓库前跑一遍脱敏自检：
+
+```bash
+npm run privacy-check
+```
+
+它扫所有被 git 跟踪的文件，查个人主目录路径、邮箱、凭据串、内网地址；真名、家人称呼、内部目录名这类词放在仓库根目录的 `.privacy-patterns`（一行一个，已在 `.gitignore` 里），不进仓库。有命中就退出码 1。
+
+改完按这张表让它生效：
 
 | 改了哪 | 怎么生效 |
 |:---|:---|
