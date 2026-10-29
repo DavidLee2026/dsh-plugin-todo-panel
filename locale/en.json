@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Todo Panel",
-    "description": "Shows a markdown todo list in the right sidebar: open count, how long each item has waited, tag filters, and every toggle or delete writes back to the file."
+    "description": "Shows a markdown todo list in the right sidebar: open and done counts, a completion bar, tag filters, and toggles, deletes or drag-to-reorder all write back to the file."
   }
 }

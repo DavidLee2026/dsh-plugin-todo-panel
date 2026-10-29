@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-todo-panel",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A todo panel for the DeepSeek Harness sidebar: renders a markdown todo list and writes toggles, tags and deletions back line by line.",
   "license": "MIT",
   "type": "module",

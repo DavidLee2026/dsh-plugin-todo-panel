@@ -94,10 +94,14 @@ function changed_lines(left, right) {
 
 /** 从状态里按正文找到某一条。 */
 function find_item(state, prefix_text) {
-  const items = state.groups.flatMap((group) => group.items);
-  const found = items.find((item) => item.text.startsWith(prefix_text));
+  const found = state.open_items.find((item) => item.text.startsWith(prefix_text));
   assert.ok(found, `清单里应有一条以「${prefix_text}」开头的待办`);
   return found;
+}
+
+/** 未完成条目的正文顺序，用来断言拖动之后的位置。 */
+function open_texts(state) {
+  return state.open_items.map((item) => item.text);
 }
 
 test('读取：件数、标签、等待件数都对得上', async (t) => {
@@ -106,6 +110,8 @@ test('读取：件数、标签、等待件数都对得上', async (t) => {
   assert.equal(state.status, 200, 'state 应返回 200');
   assert.equal(state.json.tags.length, 5, '默认 5 个标签');
   assert.equal(state.json.open_count, 3, '示例里有 3 条未完成');
+  assert.equal(state.json.done_count, 1, '已完成的那条要单独计数');
+  assert.equal(state.json.total_count, 4, '总数 = 未完成 + 已完成，供进度条算完成率');
   assert.equal(state.json.waiting_count, 1, '「待确认」开头的那条算等回话');
   assert.equal(state.json.untagged_count, 1, '只有一条没有标签');
   assert.equal(state.json.tag_counts['工作'], 1);
@@ -122,6 +128,8 @@ test('勾选：只改目标行，取消后与原文件逐字相同', async (t) =
   const done = await panel.call('toggle', { line: item.line, raw: item.raw, done: true });
   assert.equal(done.status, 200, '勾选应成功');
   assert.equal(done.json.open_count, 2, '勾掉一件后应少一件');
+  assert.equal(done.json.done_count, 2, '勾掉一件后完成数加一');
+  assert.equal(done.json.total_count, 4, '总数不变，进度条的分母不能动');
   assert.equal(panel.read().split('\n')[item.line], `- [x] ${item.raw}`, '该行应变成已完成');
   assert.equal(changed_lines(panel.original, panel.read()), 1, '只应改动一行');
 
@@ -233,6 +241,42 @@ test('配置：标签集合与等待规则可以由 config 覆盖', async (t) =>
   const json = JSON.parse(res.body);
   assert.deepEqual(json.tags.map((tag) => tag.id), ['甲', '乙'], '标签应改用配置里的集合');
   assert.equal(json.waiting_count, 1, '自定义等待规则也应生效');
+});
+
+test('拖动排序：搬到最前面，只动这一行，其余行顺序不变', async (t) => {
+  const panel = make_panel(t);
+  const state = await panel.call('state');
+  const before = open_texts(state.json);
+  assert.deepEqual(before, ['把这周的会议记录整理成三条结论', '预约体检', '待确认：报价单要不要按新口径改'], '初始顺序按文件顺序');
+
+  const last = state.json.open_items[2];
+  const first = state.json.open_items[0];
+  const moved = await panel.call('move', { line: last.line, raw: last.raw, before: first.line });
+  assert.equal(moved.status, 200, '换位置应成功');
+  assert.deepEqual(open_texts(moved.json), [before[2], before[0], before[1]], '被拖的那条应落到第一行');
+  assert.equal(moved.json.open_count, 3, '件数不变');
+  assert.ok(panel.read().includes(last.raw), '这一行的原文要原样保留');
+  assert.equal(panel.read().split('\n')[first.line], `- [ ] ${last.raw}`, '源行原样落到第一行的位置');
+  assert.equal(changed_lines(panel.original, panel.read()), 3, '只有这一段三行整体换位');
+});
+
+test('拖动排序：拖回原位不写文件，跨节或目标不在时拒绝', async (t) => {
+  const panel = make_panel(t);
+  const state = await panel.call('state');
+  const first = state.json.open_items[0];
+  const second = state.json.open_items[1];
+
+  const same = await panel.call('move', { line: first.line, raw: first.raw, before: second.line });
+  assert.equal(same.status, 200);
+  assert.equal(panel.read(), panel.original, '拖到原位不该改动文件');
+
+  const archived = state.json.done[0];
+  const cross = await panel.call('move', { line: first.line, raw: first.raw, before: archived.line });
+  assert.equal(cross.status, 400, '不能拖到已完成那一节');
+  assert.equal(panel.read(), panel.original, '被拒绝时文件不动');
+
+  const stale = await panel.call('move', { line: first.line, raw: '对不上的内容', before: second.line });
+  assert.equal(stale.status, 409, '原文对不上要拒绝');
 });
 
 test('默认落点：没配 todoFile 时落在 DSH 家目录的 todo/todo.md', async (t) => {
